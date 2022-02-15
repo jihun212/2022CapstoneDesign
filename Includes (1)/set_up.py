@@ -1,7 +1,8 @@
 # Databricks notebook source
 # MAGIC %md 
 # MAGIC #### To-do List
-# MAGIC ##### 1. SET UP PATHWAY & ENVIRONMENT(환경설정)
+# MAGIC ##### 1. SET UP PATHWAY & ENVIRONMENT(환경설정)   
+# MAGIC                   **IN PROGRESS**
 # MAGIC ##### 2. DATAFRAME -> DELTA FORMAT & STORE AT S3 BUCKET (데이터 변환 및 S3 BUCKET에 저장)
 # MAGIC ##### 3. MAKE BRONZE TABLE(RAW) (BRONZE TABLE 작성, RAW DATA)
 # MAGIC ##### 4. CLEAN THE DATA (데이터 전처리)
@@ -20,5 +21,21 @@ gold_path = path + '/air_pollution_gold'
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC hi
+dbutils.fs.ls(path)
+
+# COMMAND ----------
+
+#schema 
+from pyspark.sql.types import *
+
+customschema = 
+    StructType([
+    StructField("datetime ", StringType(), True),
+    StructField("author", StringType(), True),
+    StructField("description", StringType(), True),
+    StructField("genre", StringType(), True),
+    StructField("price", DoubleType(), True),
+    StructField("publish_date", StringType(), True),
+    StructField("title", StringType(), True)])
+
+
