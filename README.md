@@ -1,5 +1,5 @@
 # 2022CapstoneDesign
-
+    팀명:  LAKEHOUSE 
 * 조규정(Data Process)
 * 정지현(Open Data Parsing)
 * 김혜원(Web App)
