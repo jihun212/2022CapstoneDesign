@@ -42,8 +42,8 @@ import bs4
 
 pandas_df = pd.DataFrame()
 
-dosi = ['서울','경기','인천']
-gu = ['25','31','10']
+dosi = ['서울','부산','대구','인천','광주','대전','울산','경기','강원','충북','충남','전북','전남','경북','경남','제주','세종']
+gu = ['25','16','8','10','5','5','5','31','18','11','15','14','22','23','18','2','1']
 i = 0
 for i in range(len(dosi)):
     
@@ -107,10 +107,17 @@ display(pandas_df)
 # COMMAND ----------
 
 
-sparkDf.write.format("delta").partitionBy("sidoname").mode("overwrite").option("overwriteSchema", "true").save("dbfs:/tmp/air_pollution/raw")
+sparkDf.write.format("delta").partitionBy("sidoname").mode("overwrite").option("overwriteSchema", "true").save("dbfs:/tmp/air_pollution/delta")
 
 # COMMAND ----------
 
 #check out the schema of spark dataframe in the storage
-sample_df = spark.read.format("delta").load("dbfs:/tmp/air_pollution/raw")
-sampld_df.printSchema()
+sample_df = spark.read.format("delta").load("dbfs:/tmp/air_pollution/delta")
+
+# COMMAND ----------
+
+display(sample_df)
+
+# COMMAND ----------
+
+
