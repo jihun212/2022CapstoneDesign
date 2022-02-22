@@ -14,6 +14,10 @@
 # COMMAND ----------
 
 raw_path = "dbfs:/tmp/air_pollution/raw"
+delta_path = "dbfs:/tmp/air_pollution/delta"
+bronze_path = "dbfs:/tmp/airpollution/air_pollution_bronze"
+silver_path = "dbfs:/tmp/airpollution/air_pollution_silver"
+gold_path = "dbfs:/tmp/airpollution/air_pollution_gold"
 
 # COMMAND ----------
 
