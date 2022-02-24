@@ -14,9 +14,14 @@
 # COMMAND ----------
 
 raw_path = "dbfs:/tmp/air_pollution/raw"
+delta_path = "dbfs:/tmp/air_pollution/delta"
+bronze_path = "dbfs:/tmp/airpollution/air_pollution_bronze"
+
+bronze_table_path = "dbfs:/user/hive/warehouse/capstone.db/airpollution_bronze"
+silver_table_path = "dbfs:/user/hive/warehouse/capstone.db/airpollution_silver"
+gold_table_path = "dbfs:/user/hive/warehouse/capstone.db/airpollution_gold"
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC CREATE DATABASE IF NOT EXISTS Capstone;
 # MAGIC USE Capstone

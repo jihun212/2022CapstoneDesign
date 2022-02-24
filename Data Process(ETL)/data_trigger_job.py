@@ -4,7 +4,7 @@
 # MAGIC ## Data Parsing from Open Api 
 # MAGIC 
 # MAGIC 
-# MAGIC    ####한국환경공단 - 대기오염
+# MAGIC    #### 한국환경공단 - 대기오염
 # MAGIC 
 # MAGIC https://www.data.go.kr/iim/api/selectAPIAcountView.do
 
@@ -20,6 +20,10 @@
 
 # COMMAND ----------
 
+# MAGIC %run ../includes/path_setup
+
+# COMMAND ----------
+
 import requests
 import json
 import xmltodict
@@ -30,8 +34,8 @@ import bs4
 
 pandas_df = pd.DataFrame()
 
-dosi = ['서울','경기','인천']
-gu = ['25','31','10']
+dosi = ['서울','부산','대구','인천','광주','대전','울산','경기','강원','충북','충남','전북','전남','경북','경남','제주','세종']
+gu = ['25','16','8','10','5','5','5','31','18','11','15','14','22','23','18','2','1']
 i = 0
 for i in range(len(dosi)):
     
@@ -86,17 +90,78 @@ sparkDf = (sparkDf.withColumn("so2value", col("so2value").cast("double"))
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
 #append the data
 
 (sparkDf.write.format("delta")\
 .mode("append").partitionBy("sidoname")\
 .option("mergeSchema", "true")\
-.save("dbfs:/tmp/air_pollution/raw"))
+.save(bronze_path))
 
 # COMMAND ----------
 
+# MAGIC %sql
+# MAGIC --DROP TABLE IF EXISTS airpollution_bronze;
+# MAGIC --
+# MAGIC --DROP TABLE IF EXISTS airpollution_silver;
+# MAGIC --
+# MAGIC --DROP TABLE IF EXISTS airpollution_gold;
 
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Bronze Table: Raw Table 
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC DESCRIBE HISTORY bronze_path
+
+# COMMAND ----------
+
+#Creating bronze table 
+(spark.read
+ .format("delta")
+ .options(inferschema = True)
+ .load(bronze_path)
+ .createOrReplaceTempView("airpollution_bronze_1"))
+
+# COMMAND ----------
+
+spark.sql("""SELECT * FROM airpollution_bronze_1""").write.partitionBy("sidoname").mode("overwrite").saveAsTable("airpollution_bronze")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Silver Table: Cleaned Table
+# MAGIC 
+# MAGIC selected only sidoname,cityname,pm10value,pm25valuel, datetime value 
+
+# COMMAND ----------
+
+#silver table
+
+spark.sql("""SELECT sidoname, cityname, pm10value, pm25value, datatime as datetime 
+FROM airpollution_bronze_1""").write.partitionBy("sidoname").mode("overwrite").saveAsTable("airpollution_silver")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Gold Table: Aggregated Table
+# MAGIC Average pm10, pm2.5 value of each "시도"
+
+# COMMAND ----------
+
+#gold temporary table
+
+spark.sql("""SELECT sidoname, ROUND(AVG(pm10value)) AS pm10value, ROUND(AVG(pm25value)) AS pm25value, datetime FROM airpollution_silver GROUP BY sidoname,datetime""").write.format("delta").partitionBy("sidoname").mode("overwrite").saveAsTable("airpollution_gold")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Optimizing the data files
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC OPTIMIZE airpollution_silver;
+# MAGIC OPTIMIZE airpollution_bronze;
