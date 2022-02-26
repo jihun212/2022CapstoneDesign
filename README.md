@@ -21,6 +21,10 @@
 ### 데이터 파이프라인
 ![](https://files.training.databricks.com/images/davis/delta_multihop.png)
 
+### 데이터
+* 공공데이터(한국환경공단) 한국환경공단_에어코리아_대기오염통계 현황 
+* https://www.data.go.kr/data/15073855/openapi.do
+
 ### 참고링크 및 문헌
 * https://plotly.com/dash/
 * https://databricks.com/
