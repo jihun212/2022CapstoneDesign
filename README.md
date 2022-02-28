@@ -12,8 +12,8 @@
 * 최지훈(Data Visualization)
 
 ### 개발환경
-* WEB SERVER : Amazon Ec2
-* STORAGE : Amazon s3
+* WEB SERVER : Amazon EC2
+* STORAGE : Amazon S3
 * PROCESS: Databricks(Apache Spark, Delta Lake)
 * DATA VISUALIZATION : Python(Plotly)
 * FRONT : DASH
