@@ -27,7 +27,7 @@
 import requests
 import json
 import xmltodict
-
+import time
 import pandas as pd
 import bs4
 
@@ -44,6 +44,7 @@ for i in range(len(dosi)):
     dict = xmltodict.parse(content)
     jsonString = json.dumps(dict['response']['body']['items'],ensure_ascii=False)
     jsonObj = json.loads(jsonString)
+    time.sleep(2)                                   ##need some time to get response from url
     for item in jsonObj['item'] :
         obj = bs4.BeautifulSoup(content,'lxml')
         rows = obj.findAll('item')
