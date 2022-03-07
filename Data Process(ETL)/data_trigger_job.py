@@ -38,17 +38,17 @@ dosi = ['서울','부산','대구','인천','광주','대전','울산','경기',
 gu = ['25','16','8','10','5','5','5','31','18','11','15','14','22','23','18','2','1']
 i = 0
 for i in range(len(dosi)):
+    url = 'http://apis.data.go.kr/B552584/ArpltnStatsSvc/getCtprvnMesureSidoLIst?sidoName='+dosi[i]+'&searchCondition=DAILY&pageNo=1&numOfRows='+gu[i]+'&returnType=xml&serviceKey=a8FubWL%2FURCqiTEiDmFD7i7wruofBvm5MeCxhbjotP4Mus3%2BZ0hQOK5WNIbfOfDle%2FeyR8lJ%2BXukO3FCa8bfBA%3D%3D'
+    request_content = requests.get(url)
+    time.sleep(2)
+    content = request_content.content
     
-    url = 'http://apis.data.go.kr/B552584/ArpltnStatsSvc/getCtprvnMesureSidoLIst?sidoName='+dosi[i]+'&searchCondition=DAILY&pageNo=1&numOfRows='+gu[i]+'&returnType=xml&serviceKey=5Ztnnqpm6wBoBE0%2FhONq8zqiXjnydmC7kRuFtT%2BETSA%2Fpw4OlGFCGd83ayCPMVTBTrkxYPyf51hZZ0pcck%2FHNA%3D%3D'
-    content = requests.get(url).content
     dict = xmltodict.parse(content)
     jsonString = json.dumps(dict['response']['body']['items'],ensure_ascii=False)
     jsonObj = json.loads(jsonString)
-    time.sleep(2)                                   ##need some time to get response from url
     for item in jsonObj['item'] :
         obj = bs4.BeautifulSoup(content,'lxml')
         rows = obj.findAll('item')
-
 
         row_list = []
         name_list = []
@@ -115,7 +115,7 @@ sparkDf = (sparkDf.withColumn("so2value", col("so2value").cast("double"))
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC DESCRIBE HISTORY bronze_path
+# MAGIC -- DESCRIBE HISTORY bronze_path
 
 # COMMAND ----------
 
@@ -140,9 +140,12 @@ spark.sql("""SELECT * FROM airpollution_bronze_1""").write.partitionBy("sidoname
 # COMMAND ----------
 
 #silver table
+spark.sql("""SELECT sidoname, cityname, pm10value, pm25value, count(*) as count, datatime as datetime FROM airpollution_bronze WHERE datatime is not null GROUP BY sidoname, cityname, pm10value, pm25value, datetime""").write.partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("airpollution_silver")
 
-spark.sql("""SELECT sidoname, cityname, pm10value, pm25value, datatime as datetime 
-FROM airpollution_bronze_1""").write.partitionBy("sidoname").mode("overwrite").saveAsTable("airpollution_silver")
+# COMMAND ----------
+
+## Check the silver table schema and the data 
+display(spark.sql("""SELECT * FROM capstone.airpollution_silver"""))
 
 # COMMAND ----------
 
@@ -154,7 +157,12 @@ FROM airpollution_bronze_1""").write.partitionBy("sidoname").mode("overwrite").s
 
 #gold temporary table
 
-spark.sql("""SELECT sidoname, ROUND(AVG(pm10value)) AS pm10value, ROUND(AVG(pm25value)) AS pm25value, datetime FROM airpollution_silver GROUP BY sidoname,datetime""").write.format("delta").partitionBy("sidoname").mode("overwrite").saveAsTable("airpollution_gold")
+spark.sql("""SELECT sidoname, sidoname as cityname, ROUND(AVG(pm10value)) AS pm10value, ROUND(AVG(pm25value)) AS pm25value, COUNT(*) AS count, datetime FROM airpollution_silver GROUP BY sidoname,datetime""").write.format("delta").partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("airpollution_gold")
+
+# COMMAND ----------
+
+## Check the gold table schema and the data 
+display(spark.sql("""SELECT sidoname, cityname, pm10value, pm25value, count, datetime FROM capstone.airpollution_gold"""))
 
 # COMMAND ----------
 
@@ -164,5 +172,43 @@ spark.sql("""SELECT sidoname, ROUND(AVG(pm10value)) AS pm10value, ROUND(AVG(pm25
 # COMMAND ----------
 
 # MAGIC %sql
+# MAGIC OPTIMIZE airpollution_bronze;
 # MAGIC OPTIMIZE airpollution_silver;
 # MAGIC OPTIMIZE airpollution_bronze;
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Merge Table: Add new column 'count' and merge gold and silver table 
+
+# COMMAND ----------
+
+# MAGIC %sql 
+# MAGIC -- creating merge table 
+# MAGIC 
+# MAGIC -- SELECT *
+# MAGIC -- FROM
+# MAGIC -- (SELECT 
+# MAGIC --   sidoname,
+# MAGIC --   cityname,
+# MAGIC --   pm10value,
+# MAGIC --   pm25value,
+# MAGIC --   datetime,
+# MAGIC --   count
+# MAGIC -- FROM airpollution_silver
+# MAGIC -- 
+# MAGIC -- UNION ALL
+# MAGIC -- 
+# MAGIC -- SELECT 
+# MAGIC --   sidoname,
+# MAGIC --   cityname,
+# MAGIC --   pm10value,
+# MAGIC --   pm25value,
+# MAGIC --   datetime,
+# MAGIC --   count
+# MAGIC -- FROM airpollution_gold) merge_table
+# MAGIC -- WHERE count > 1
+
+# COMMAND ----------
+
+display(spark.sql("""SELECT * FROM airpollution_gold"""))
