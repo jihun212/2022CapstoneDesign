@@ -100,6 +100,24 @@ sparkDf = (sparkDf.withColumn("so2value", col("so2value").cast("double"))
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC # Live Table: Table for Choropleth Map - silver, gold
+
+# COMMAND ----------
+
+## Create Live table, current time table 
+sparkDf.write.format("delta").mode("overwrite").saveAsTable("capstone.live_table")
+
+# COMMAND ----------
+
+spark.sql("""SELECT sidoname, cityname, pm10value, pm25value, datatime as datetime FROM capstone.live_table WHERE datatime is not null """).write.partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("live_silver_table")
+
+# COMMAND ----------
+
+spark.sql("""SELECT sidoname, sidoname as cityname, ROUND(AVG(pm10value)) AS pm10value, ROUND(AVG(pm25value)) AS pm25value, datetime FROM capstone.live_silver_table GROUP BY sidoname,datetime""").write.format("delta").partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("live_gold_table")
+
+# COMMAND ----------
+
 # MAGIC %sql
 # MAGIC --DROP TABLE IF EXISTS airpollution_bronze;
 # MAGIC --
@@ -139,13 +157,13 @@ spark.sql("""SELECT * FROM airpollution_bronze_1""").write.partitionBy("sidoname
 
 # COMMAND ----------
 
-#silver table
-spark.sql("""SELECT sidoname, cityname, pm10value, pm25value, count(*) as count, datatime as datetime FROM airpollution_bronze WHERE datatime is not null GROUP BY sidoname, cityname, pm10value, pm25value, datetime""").write.partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("airpollution_silver")
+#silver table(must)
+##spark.sql("""SELECT sidoname, cityname, pm10value, pm25value, datatime as datetime FROM airpollution_bronze WHERE datatime is not null """).write.partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("airpollution_silver")
 
 # COMMAND ----------
 
 ## Check the silver table schema and the data 
-display(spark.sql("""SELECT * FROM capstone.airpollution_silver"""))
+##display(spark.sql("""SELECT * FROM capstone.airpollution_silver"""))
 
 # COMMAND ----------
 
@@ -155,14 +173,14 @@ display(spark.sql("""SELECT * FROM capstone.airpollution_silver"""))
 
 # COMMAND ----------
 
-#gold temporary table
+#gold temporary table(must)
 
-spark.sql("""SELECT sidoname, sidoname as cityname, ROUND(AVG(pm10value)) AS pm10value, ROUND(AVG(pm25value)) AS pm25value, COUNT(*) AS count, datetime FROM airpollution_silver GROUP BY sidoname,datetime""").write.format("delta").partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("airpollution_gold")
+##spark.sql("""SELECT sidoname, sidoname as cityname, ROUND(AVG(pm10value)) AS pm10value, ROUND(AVG(pm25value)) AS pm25value, datetime FROM airpollution_silver GROUP BY sidoname,datetime""").write.format("delta").partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("airpollution_gold")
 
 # COMMAND ----------
 
 ## Check the gold table schema and the data 
-display(spark.sql("""SELECT sidoname, cityname, pm10value, pm25value, count, datetime FROM capstone.airpollution_gold"""))
+##display(spark.sql("""SELECT * FROM capstone.airpollution_gold"""))
 
 # COMMAND ----------
 
@@ -172,9 +190,10 @@ display(spark.sql("""SELECT sidoname, cityname, pm10value, pm25value, count, dat
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC OPTIMIZE airpollution_bronze;
-# MAGIC OPTIMIZE airpollution_silver;
-# MAGIC OPTIMIZE airpollution_bronze;
+# MAGIC --OPTIMIZE delta.`dbfs:/tmp/airpollution/air_pollution_bronze`(must)
+# MAGIC --OPTIMIZE airpollution_bronze;
+# MAGIC --OPTIMIZE airpollution_silver;
+# MAGIC --OPTIMIZE airpollution_gold;
 
 # COMMAND ----------
 
@@ -183,32 +202,21 @@ display(spark.sql("""SELECT sidoname, cityname, pm10value, pm25value, count, dat
 
 # COMMAND ----------
 
-# MAGIC %sql 
-# MAGIC -- creating merge table 
-# MAGIC 
-# MAGIC -- SELECT *
-# MAGIC -- FROM
-# MAGIC -- (SELECT 
-# MAGIC --   sidoname,
-# MAGIC --   cityname,
-# MAGIC --   pm10value,
-# MAGIC --   pm25value,
-# MAGIC --   datetime,
-# MAGIC --   count
-# MAGIC -- FROM airpollution_silver
-# MAGIC -- 
-# MAGIC -- UNION ALL
-# MAGIC -- 
-# MAGIC -- SELECT 
-# MAGIC --   sidoname,
-# MAGIC --   cityname,
-# MAGIC --   pm10value,
-# MAGIC --   pm25value,
-# MAGIC --   datetime,
-# MAGIC --   count
-# MAGIC -- FROM airpollution_gold) merge_table
-# MAGIC -- WHERE count > 1
+##Merge the dataset with silver table(must)
+
+##spark.sql("""SELECT s.sidoname, s.cityname, s.pm10value, s.pm25value, p.pop, s.datetime FROM airpollution_silver s LEFT JOIN population_table p ON s.cityname = p.cityname WHERE s.sidoname = p.sidoname""").write.format("delta").partitionBy("sidoname").mode("overwrite").saveAsTable("capstone.silver_pop_merge_table")
 
 # COMMAND ----------
 
-display(spark.sql("""SELECT * FROM airpollution_gold"""))
+##display(spark.sql("""SELECT * FROM airpollution_gold"""))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Merge Table: Gold_Day_Week_Table
+
+# COMMAND ----------
+
+##Updating gold_day_week_table
+
+##spark.sql("""SELECT sidoname,cityname,pm25value,pm10value,datetime,DATE_TRUNC('day',datetime) AS day,DATE_TRUNC('week',datetime) AS week FROM airpollution_gold""").mode('overwrite').saveAsTable("gold_day_week_table")
