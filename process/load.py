@@ -2,9 +2,9 @@ import pandas as pd
 from databricks import sql
 import json
 
-with sql.connect(server_hostname="dbc-800ee441-e313.cloud.databricks.com",
-                 http_path="sql/protocolv1/o/0/0501-044559-6z33pn5y",
-                 access_token="dapi6412995f9cf73dddd030a6d1d8eea519") as connection:
+with sql.connect(server_hostname="<hostname>",
+                 http_path="<path>",
+                 access_token="token") as connection:
     with connection.cursor() as cursor:
         # 지현씨 시군구 데이터
         cursor.execute("SELECT * FROM capstone.live_silver_table")
