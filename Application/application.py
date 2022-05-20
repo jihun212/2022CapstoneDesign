@@ -139,21 +139,6 @@ def display_page(pathname):
                         ]
                     )
                 ),
-                # dbc.Card(
-                #     dbc.CardBody(
-                #         [
-                #             html.H5("미세먼지 경보", className="pm25Alert"),
-                #             html.P(
-                #                 "현재 미세먼지 수치가 가장 높은 지역은"
-                #                 "",
-                #                 className="card-text",
-                #             ),
-                #             dbc.Button(
-                #                 "Click here", color="danger", className="mt-auto"
-                #             ),
-                #         ]
-                #     )
-                # ),
             ]
             ))]),
 
