@@ -110,11 +110,11 @@ sparkDf.write.format("delta").mode("overwrite").saveAsTable("capstone.live_table
 
 # COMMAND ----------
 
-spark.sql("""SELECT sidoname, cityname, pm10value, pm25value, datatime as datetime FROM capstone.live_table WHERE datatime is not null """).write.partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("live_silver_table")
+spark.sql("""SELECT sidoname, cityname, pm10value, pm25value, datatime as datetime FROM live_table """).write.option("mergeSchema","true").mode("overwrite").saveAsTable("live_silver_table")
 
 # COMMAND ----------
 
-spark.sql("""SELECT sidoname, sidoname as cityname, ROUND(AVG(pm10value)) AS pm10value, ROUND(AVG(pm25value)) AS pm25value, datetime FROM capstone.live_silver_table GROUP BY sidoname,datetime""").write.format("delta").partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("live_gold_table")
+spark.sql("""SELECT sidoname, sidoname as cityname, ROUND(AVG(pm10value)) AS pm10value, ROUND(AVG(pm25value)) AS pm25value, datetime FROM live_silver_table GROUP BY sidoname,datetime""").write.format("delta").partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("live_gold_table")
 
 # COMMAND ----------
 
@@ -146,7 +146,7 @@ spark.sql("""SELECT sidoname, sidoname as cityname, ROUND(AVG(pm10value)) AS pm1
 
 # COMMAND ----------
 
-spark.sql("""SELECT * FROM airpollution_bronze_1""").write.partitionBy("sidoname").mode("overwrite").saveAsTable("airpollution_bronze")
+spark.sql("""SELECT * FROM airpollution_bronze_1 WHERE datatime is not null""").write.partitionBy("sidoname").mode("overwrite").saveAsTable("airpollution_bronze")
 
 # COMMAND ----------
 
@@ -158,7 +158,7 @@ spark.sql("""SELECT * FROM airpollution_bronze_1""").write.partitionBy("sidoname
 # COMMAND ----------
 
 #silver table(must)
-##spark.sql("""SELECT sidoname, cityname, pm10value, pm25value, datatime as datetime FROM airpollution_bronze WHERE datatime is not null """).write.partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("airpollution_silver")
+spark.sql("""SELECT sidoname, cityname, pm10value, pm25value, datatime as datetime FROM airpollution_bronze WHERE datatime is not null """).write.partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("airpollution_silver")
 
 # COMMAND ----------
 
@@ -175,12 +175,12 @@ spark.sql("""SELECT * FROM airpollution_bronze_1""").write.partitionBy("sidoname
 
 #gold temporary table(must)
 
-##spark.sql("""SELECT sidoname, sidoname as cityname, ROUND(AVG(pm10value)) AS pm10value, ROUND(AVG(pm25value)) AS pm25value, datetime FROM airpollution_silver GROUP BY sidoname,datetime""").write.format("delta").partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("airpollution_gold")
+spark.sql("""SELECT sidoname, sidoname as cityname, ROUND(AVG(pm10value)) AS pm10value, ROUND(AVG(pm25value)) AS pm25value, datetime FROM airpollution_silver GROUP BY sidoname,datetime""").write.format("delta").partitionBy("sidoname").option("mergeSchema","true").mode("overwrite").saveAsTable("airpollution_gold")
 
 # COMMAND ----------
 
 ## Check the gold table schema and the data 
-##display(spark.sql("""SELECT * FROM capstone.airpollution_gold"""))
+display(spark.sql("""SELECT * FROM capstone.airpollution_gold"""))
 
 # COMMAND ----------
 
@@ -190,7 +190,7 @@ spark.sql("""SELECT * FROM airpollution_bronze_1""").write.partitionBy("sidoname
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC --OPTIMIZE delta.`dbfs:/tmp/airpollution/air_pollution_bronze`(must)
+# MAGIC OPTIMIZE delta.`dbfs:/tmp/airpollution/air_pollution_bronze`
 # MAGIC --OPTIMIZE airpollution_bronze;
 # MAGIC --OPTIMIZE airpollution_silver;
 # MAGIC --OPTIMIZE airpollution_gold;
@@ -204,7 +204,7 @@ spark.sql("""SELECT * FROM airpollution_bronze_1""").write.partitionBy("sidoname
 
 ##Merge the dataset with silver table(must)
 
-##spark.sql("""SELECT s.sidoname, s.cityname, s.pm10value, s.pm25value, p.pop, s.datetime FROM airpollution_silver s LEFT JOIN population_table p ON s.cityname = p.cityname WHERE s.sidoname = p.sidoname""").write.format("delta").partitionBy("sidoname").mode("overwrite").saveAsTable("capstone.silver_pop_merge_table")
+spark.sql("""SELECT s.sidoname, s.cityname, s.pm10value, s.pm25value, p.pop, s.datetime FROM capstone.airpollution_silver s LEFT JOIN capstone.population_table p ON s.cityname = p.cityname WHERE s.sidoname = p.sidoname""").write.format("delta").partitionBy("sidoname").mode("overwrite").saveAsTable("capstone.silver_pop_merge_table")
 
 # COMMAND ----------
 
@@ -219,4 +219,4 @@ spark.sql("""SELECT * FROM airpollution_bronze_1""").write.partitionBy("sidoname
 
 ##Updating gold_day_week_table
 
-##spark.sql("""SELECT sidoname,cityname,pm25value,pm10value,datetime,DATE_TRUNC('day',datetime) AS day,DATE_TRUNC('week',datetime) AS week FROM airpollution_gold""").mode('overwrite').saveAsTable("gold_day_week_table")
+spark.sql("""SELECT sidoname,cityname,pm25value,pm10value,datetime,DATE_TRUNC('day',datetime) AS day,DATE_TRUNC('week',datetime) AS week FROM airpollution_gold""").write.mode('overwrite').saveAsTable("gold_day_week_table")
